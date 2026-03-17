@@ -12,11 +12,4 @@ import java.util.Optional;
 @Repository
 public interface ReactionRepository extends JpaRepository<Reaction, Long> {
     
-    Optional<Reaction> findByMomentAndUser(Moment moment, User user);
-    
-    List<Reaction> findByMoment(Moment moment);
-    
-    Long countByMoment(Moment moment);
-    
-    void deleteByMomentAndUser(Moment moment, User user);
 }

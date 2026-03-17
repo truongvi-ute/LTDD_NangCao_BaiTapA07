@@ -42,6 +42,9 @@ public class Comment {
     @Column
     private LocalDateTime blockedAt;
 
+    @Column(nullable = false)
+    private Long reactionCount = 0L;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

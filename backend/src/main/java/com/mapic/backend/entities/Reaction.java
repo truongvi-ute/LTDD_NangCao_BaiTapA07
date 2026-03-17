@@ -2,20 +2,22 @@ package com.mapic.backend.entities;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "reactions", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"moment_id", "user_id"})
-})
-public class Reaction {
+@Table(name = "reactions")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "target_type", discriminatorType = DiscriminatorType.STRING)
+@Getter
+@Setter
+@NoArgsConstructor
+public abstract class Reaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "moment_id", nullable = false)
-    private Moment moment;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -33,44 +35,16 @@ public class Reaction {
         createdAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Reaction)) return false;
+        Reaction reaction = (Reaction) o;
+        return id != null && id.equals(reaction.id);
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Moment getMoment() {
-        return moment;
-    }
-
-    public void setMoment(Moment moment) {
-        this.moment = moment;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public ReactionType getType() {
-        return type;
-    }
-
-    public void setType(ReactionType type) {
-        this.type = type;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }

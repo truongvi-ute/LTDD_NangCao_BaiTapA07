@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -27,7 +26,7 @@ public class DataSeederService implements CommandLineRunner {
     private final FriendshipRepository friendshipRepository;
     private final PasswordEncoder passwordEncoder;
     private final CommentRepository commentRepository;
-    private final ReactionRepository reactionRepository;
+    private final MomentReactionRepository momentReactionRepository;
     private final MomentStatsService momentStatsService;
 
     private final Random random = new Random();
@@ -259,7 +258,7 @@ public class DataSeederService implements CommandLineRunner {
             // Tạo reactions
             for (int i = 0; i < Math.min(numReactions, interactors.size()); i++) {
                 User user = interactors.get(i);
-                Reaction reaction = new Reaction();
+                MomentReaction reaction = new MomentReaction();
                 reaction.setMoment(moment);
                 reaction.setUser(user);
 
@@ -269,7 +268,7 @@ public class DataSeederService implements CommandLineRunner {
                         : (rand < 90) ? ReactionType.LOVE : ReactionType.WOW;
                 reaction.setType(type);
 
-                reactionRepository.save(reaction);
+                momentReactionRepository.save(reaction);
                 reactionCount++;
             }
 

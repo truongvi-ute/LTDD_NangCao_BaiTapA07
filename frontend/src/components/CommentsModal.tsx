@@ -14,6 +14,8 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { buildImageUrl } from '@/src/utils/imageHelper';
+import ReactionPicker, { ReactionType } from './ReactionPicker';
+import commentReactionService from '@/src/services/commentReactionService';
 
 const DEFAULT_AVATAR = require('@/assets/images/avatar_default.png');
 
@@ -25,6 +27,8 @@ export interface Comment {
   content: string;
   parentCommentId?: number;
   replies: Comment[];
+  reactionCount: number;
+  myReaction?: ReactionType;
   createdAt: string;
 }
 
@@ -37,6 +41,7 @@ interface CommentsModalProps {
   comments: Comment[];
   loading: boolean;
   currentUserId: number;
+  onCommentUpdate?: () => void;
 }
 
 export default function CommentsModal({
@@ -45,13 +50,20 @@ export default function CommentsModal({
   onClose,
   onAddComment,
   onDeleteComment,
-  comments,
+  comments: initialComments,
   loading,
   currentUserId,
+  onCommentUpdate,
 }: CommentsModalProps) {
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [activeReactionCommentId, setActiveReactionCommentId] = useState<number | null>(null);
+  const [comments, setComments] = useState<Comment[]>(initialComments);
+
+  useEffect(() => {
+    setComments(initialComments);
+  }, [initialComments]);
 
   const handleSubmit = async () => {
     if (!commentText.trim()) return;
@@ -78,6 +90,93 @@ export default function CommentsModal({
     } catch (error) {
       console.error('Error deleting comment:', error);
     }
+  };
+
+  const handleReactionPress = async (comment: Comment) => {
+    try {
+      const targetType = comment.myReaction === 'LIKE' ? 'LIKE' : 'LIKE';
+      const result = await commentReactionService.toggleReaction(comment.id, targetType);
+      
+      // Update local state
+      updateCommentLocal(comment.id, result ? targetType : undefined, result ? 1 : -1);
+      onCommentUpdate?.();
+    } catch (error) {
+      console.error('Error toggling comment reaction:', error);
+    }
+  };
+
+  const handleReactionLongPress = (commentId: number) => {
+    setActiveReactionCommentId(commentId);
+  };
+
+  const handleReactionSelect = async (type: ReactionType) => {
+    if (!activeReactionCommentId) return;
+
+    try {
+      const comment = findComment(activeReactionCommentId);
+      if (!comment) return;
+
+      const result = await commentReactionService.toggleReaction(activeReactionCommentId, type);
+      
+      // Update local state
+      const wasNull = !comment.myReaction;
+      updateCommentLocal(activeReactionCommentId, type, wasNull ? 1 : 0);
+      onCommentUpdate?.();
+    } catch (error) {
+      console.error('Error selecting comment reaction:', error);
+    } finally {
+      setActiveReactionCommentId(null);
+    }
+  };
+
+  const findComment = (id: number): Comment | undefined => {
+    for (const c of comments) {
+      if (c.id === id) return c;
+      const found = c.replies.find(r => r.id === id);
+      if (found) return found;
+    }
+    return undefined;
+  };
+
+  const updateCommentLocal = (id: number, myReaction?: ReactionType, countDelta: number = 0) => {
+    setComments(prev => prev.map(c => {
+      if (c.id === id) {
+        return { ...c, myReaction, reactionCount: Math.max(0, c.reactionCount + countDelta) };
+      }
+      if (c.replies) {
+        return {
+          ...c,
+          replies: c.replies.map(r => r.id === id ? { ...r, myReaction, reactionCount: Math.max(0, r.reactionCount + countDelta) } : r)
+        };
+      }
+      return c;
+    }));
+  };
+
+  const getReactionColor = (type?: ReactionType) => {
+    if (!type) return '#65676B';
+    const colors: Record<ReactionType, string> = {
+      LIKE: '#1877F2',
+      LOVE: '#F33E58',
+      HAHA: '#F7B125',
+      WOW: '#F7B125',
+      SAD: '#F7B125',
+      ANGRY: '#E9710F',
+    };
+    return colors[type] || '#65676B';
+  };
+
+  const getReactionIcon = (type?: ReactionType) => {
+    if (!type) return 'Thích';
+    const labels: Record<ReactionType, string> = {
+      LIKE: 'Thích',
+      LOVE: 'Yêu thích',
+      HAHA: 'Haha',
+      WOW: 'Wow',
+      SAD: 'Buồn',
+      ANGRY: 'Phẫn nộ',
+    };
+    return labels[type];
   };
 
   const formatDate = (dateString: string) => {
@@ -107,9 +206,25 @@ export default function CommentsModal({
         <View style={styles.commentBubble}>
           <Text style={styles.userName}>{item.userName}</Text>
           <Text style={styles.commentText}>{item.content}</Text>
+          {item.reactionCount > 0 && (
+            <View style={styles.reactionBadge}>
+              <View style={[styles.miniReactionIcon, { backgroundColor: getReactionColor(item.myReaction || 'LIKE') }]}>
+                <Ionicons name={item.myReaction === 'LOVE' ? 'heart' : 'thumbs-up'} size={8} color="#FFF" />
+              </View>
+              <Text style={styles.reactionCountText}>{item.reactionCount}</Text>
+            </View>
+          )}
         </View>
         <View style={styles.commentActions}>
           <Text style={styles.timestamp}>{formatDate(item.createdAt)}</Text>
+          <TouchableOpacity 
+            onPress={() => handleReactionPress(item)}
+            onLongPress={() => handleReactionLongPress(item.id)}
+          >
+            <Text style={[styles.actionText, item.myReaction && { color: getReactionColor(item.myReaction) }]}>
+              {getReactionIcon(item.myReaction)}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => handleReply(item)}>
             <Text style={styles.actionText}>Trả lời</Text>
           </TouchableOpacity>
@@ -137,9 +252,25 @@ export default function CommentsModal({
                   <View style={styles.commentBubble}>
                     <Text style={styles.userName}>{reply.userName}</Text>
                     <Text style={styles.commentText}>{reply.content}</Text>
+                    {reply.reactionCount > 0 && (
+                      <View style={styles.reactionBadge}>
+                        <View style={[styles.miniReactionIcon, { backgroundColor: getReactionColor(reply.myReaction || 'LIKE') }]}>
+                          <Ionicons name={reply.myReaction === 'LOVE' ? 'heart' : 'thumbs-up'} size={8} color="#FFF" />
+                        </View>
+                        <Text style={styles.reactionCountText}>{reply.reactionCount}</Text>
+                      </View>
+                    )}
                   </View>
                   <View style={styles.commentActions}>
                     <Text style={styles.timestamp}>{formatDate(reply.createdAt)}</Text>
+                    <TouchableOpacity 
+                      onPress={() => handleReactionPress(reply)}
+                      onLongPress={() => handleReactionLongPress(reply.id)}
+                    >
+                      <Text style={[styles.actionText, reply.myReaction && { color: getReactionColor(reply.myReaction) }]}>
+                        {getReactionIcon(reply.myReaction)}
+                      </Text>
+                    </TouchableOpacity>
                     {reply.userId === currentUserId && (
                       <TouchableOpacity onPress={() => handleDelete(reply.id)}>
                         <Text style={[styles.actionText, styles.deleteText]}>Xóa</Text>
@@ -227,6 +358,11 @@ export default function CommentsModal({
             </TouchableOpacity>
           </View>
         </View>
+        <ReactionPicker
+          visible={activeReactionCommentId !== null}
+          onClose={() => setActiveReactionCommentId(null)}
+          onSelect={handleReactionSelect}
+        />
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -389,5 +525,34 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#BCC0C4',
+  },
+  reactionBadge: {
+    position: 'absolute',
+    bottom: -10,
+    right: -10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  miniReactionIcon: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 2,
+  },
+  reactionCountText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#65676B',
   },
 });

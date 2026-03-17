@@ -32,6 +32,8 @@ public class CommentController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new ApiResponse<>(true, "Bình luận thành công", comment));
         } catch (Exception e) {
+            System.err.println("COMMENT_ERROR: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null));
         }
@@ -39,11 +41,18 @@ public class CommentController {
     
     @GetMapping("/moment/{momentId}")
     public ResponseEntity<ApiResponse<List<CommentDto>>> getMomentComments(
-            @PathVariable Long momentId) {
+            @PathVariable Long momentId,
+            Authentication authentication) {
         try {
-            List<CommentDto> comments = commentService.getMomentComments(momentId);
+            Long userId = null;
+            if (authentication != null && authentication.isAuthenticated()) {
+                userId = Long.parseLong(authentication.getName());
+            }
+            List<CommentDto> comments = commentService.getMomentComments(momentId, userId);
             return ResponseEntity.ok(new ApiResponse<>(true, "Lấy danh sách bình luận thành công", comments));
         } catch (Exception e) {
+            System.err.println("COMMENT_ERROR: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null));
         }

@@ -2,8 +2,8 @@ package com.mapic.backend.services;
 
 import com.mapic.backend.entities.Moment;
 import com.mapic.backend.repositories.CommentRepository;
+import com.mapic.backend.repositories.MomentReactionRepository;
 import com.mapic.backend.repositories.MomentRepository;
-import com.mapic.backend.repositories.ReactionRepository;
 import com.mapic.backend.repositories.SavedMomentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ import java.util.List;
 public class MomentStatsService {
     
     private final MomentRepository momentRepository;
-    private final ReactionRepository reactionRepository;
+    private final MomentReactionRepository momentReactionRepository;
     private final CommentRepository commentRepository;
     private final SavedMomentRepository savedMomentRepository;
     
@@ -47,7 +47,7 @@ public class MomentStatsService {
     @Transactional
     public void updateMomentStats(Moment moment) {
         // Count reactions
-        Long reactionCount = reactionRepository.countByMoment(moment);
+        Long reactionCount = momentReactionRepository.countByMoment(moment);
         moment.setReactionCount(reactionCount);
         
         // Count comments (only non-blocked comments)

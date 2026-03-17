@@ -553,6 +553,7 @@ export default function MomentCard({ moment, currentUserId, onReactionChange, co
         comments={comments}
         loading={loadingComments}
         currentUserId={currentUserId}
+        onCommentUpdate={loadComments}
       />
     </View>
   );

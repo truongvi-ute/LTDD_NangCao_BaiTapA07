@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 public class ReactionDto {
     private Long id;
     private Long momentId;
+    private Long commentId;
     private Long userId;
     private String userName;
     private String userAvatarUrl;

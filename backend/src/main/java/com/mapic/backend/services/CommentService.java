@@ -5,6 +5,7 @@ import com.mapic.backend.dtos.CreateCommentRequest;
 import com.mapic.backend.entities.Comment;
 import com.mapic.backend.entities.Moment;
 import com.mapic.backend.entities.User;
+import com.mapic.backend.repositories.CommentReactionRepository;
 import com.mapic.backend.repositories.CommentRepository;
 import com.mapic.backend.repositories.MomentRepository;
 import com.mapic.backend.repositories.UserRepository;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 public class CommentService {
     
     private final CommentRepository commentRepository;
+    private final CommentReactionRepository commentReactionRepository;
     private final MomentRepository momentRepository;
     private final UserRepository userRepository;
     
@@ -47,10 +49,10 @@ public class CommentService {
         Comment saved = commentRepository.save(comment);
         updateMomentCommentCount(moment);
         
-        return convertToDto(saved);
+        return convertToDto(saved, userId);
     }
     
-    public List<CommentDto> getMomentComments(Long momentId) {
+    public List<CommentDto> getMomentComments(Long momentId, Long userId) {
         Moment moment = momentRepository.findById(momentId)
                 .orElseThrow(() -> new RuntimeException("Moment not found"));
         
@@ -59,7 +61,7 @@ public class CommentService {
                 .findByMomentAndParentCommentIsNullAndIsBlockedFalseOrderByCreatedAtAsc(moment);
         
         return comments.stream()
-                .map(this::convertToDtoWithReplies)
+                .map(c -> convertToDtoWithReplies(c, userId))
                 .collect(Collectors.toList());
     }
     
@@ -84,7 +86,7 @@ public class CommentService {
         momentRepository.save(moment);
     }
     
-    private CommentDto convertToDto(Comment comment) {
+    private CommentDto convertToDto(Comment comment, Long userId) {
         CommentDto dto = new CommentDto();
         dto.setId(comment.getId());
         dto.setMomentId(comment.getMoment().getId());
@@ -105,11 +107,21 @@ public class CommentService {
         dto.setUpdatedAt(comment.getUpdatedAt());
         dto.setReplies(new ArrayList<>());
         
+        // Populate reaction info
+        dto.setReactionCount(comment.getReactionCount());
+        if (userId != null) {
+            User user = userRepository.findById(userId).orElse(null);
+            if (user != null) {
+                commentReactionRepository.findTopByCommentAndUserOrderByCreatedAtDesc(comment, user)
+                        .ifPresent(r -> dto.setMyReaction(r.getType()));
+            }
+        }
+        
         return dto;
     }
     
-    private CommentDto convertToDtoWithReplies(Comment comment) {
-        CommentDto dto = convertToDto(comment);
+    private CommentDto convertToDtoWithReplies(Comment comment, Long userId) {
+        CommentDto dto = convertToDto(comment, userId);
         
         // Get replies (comments with this comment as parent)
         List<Comment> replies = commentRepository.findByMomentAndIsBlockedFalseOrderByCreatedAtAsc(comment.getMoment())
@@ -118,7 +130,7 @@ public class CommentService {
                 .collect(Collectors.toList());
         
         dto.setReplies(replies.stream()
-                .map(this::convertToDto)
+                .map(r -> convertToDto(r, userId))
                 .collect(Collectors.toList()));
         
         return dto;
