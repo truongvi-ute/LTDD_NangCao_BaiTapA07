@@ -59,13 +59,14 @@ public interface HashtagRepository extends JpaRepository<Hashtag, Long> {
      * Trending hashtags gần đây: Kết hợp usageCount và lastUsedAt
      * Use case: "Trending now" - hashtag hot trong 7 ngày gần đây
      * 
+     * @param threshold Ngày giới hạn (ví dụ: 7 ngày trước)
      * @param pageable Phân trang
      * @return Page<Hashtag>
      */
     @Query("SELECT h FROM Hashtag h " +
-           "WHERE h.lastUsedAt >= CURRENT_TIMESTAMP - 7 " +
+           "WHERE h.lastUsedAt >= :threshold " +
            "ORDER BY h.usageCount DESC, h.lastUsedAt DESC")
-    Page<Hashtag> findTrendingHashtags(Pageable pageable);
+    Page<Hashtag> findTrendingHashtags(@Param("threshold") java.time.LocalDateTime threshold, Pageable pageable);
     
     /**
      * Tìm hashtag theo danh sách tên

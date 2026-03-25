@@ -1,4 +1,4 @@
-package com.mapic.backend.controllers;
+package com.mapic.backend.controllers.admin;
 
 import com.mapic.backend.dtos.ApiResponse;
 import com.mapic.backend.entities.Moment;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/admin/system")
 @RequiredArgsConstructor
 public class AdminController {
     
@@ -20,10 +20,6 @@ public class AdminController {
     private final MomentStatsService momentStatsService;
     private final MomentRepository momentRepository;
     
-    /**
-     * Manual trigger for database seeding
-     * WARNING: This should be protected in production
-     */
     @PostMapping("/seed-database")
     public ResponseEntity<ApiResponse<String>> seedDatabase() {
         try {
@@ -38,10 +34,6 @@ public class AdminController {
         }
     }
     
-    /**
-     * Recalculate all moment statistics from actual database data
-     * Use this to fix inconsistent counts
-     */
     @PostMapping("/recalculate-stats")
     public ResponseEntity<ApiResponse<String>> recalculateStats() {
         try {
@@ -56,9 +48,6 @@ public class AdminController {
         }
     }
     
-    /**
-     * Clean invalid moments (those with non-UUID image filenames from failed seeding)
-     */
     @DeleteMapping("/clean-invalid-moments")
     public ResponseEntity<ApiResponse<String>> cleanInvalidMoments() {
         try {
@@ -67,7 +56,6 @@ public class AdminController {
             
             for (Moment moment : allMoments) {
                 String imageUrl = moment.getImageUrl();
-                // Check if imageUrl is NOT a UUID format
                 if (imageUrl != null && !imageUrl.matches("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|jpeg|png)$")) {
                     momentRepository.delete(moment);
                     deletedCount++;

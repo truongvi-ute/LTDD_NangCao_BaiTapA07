@@ -28,21 +28,26 @@ public class DataSeederService implements CommandLineRunner {
     private final CommentRepository commentRepository;
     private final MomentReactionRepository momentReactionRepository;
     private final MomentStatsService momentStatsService;
+    private final AdminRepository adminRepository;
+    private final ModeratorRepository moderatorRepository;
 
     private final Random random = new Random();
 
     @Override
     @Transactional
     public void run(String... args) {
-        // Check if data already exists
-        if (userRepository.count() >= 20) {
-            log.info("Database already seeded. Skipping...");
-            return;
-        }
-
-        log.info("Starting database seeding...");
+        log.info("Starting database seeding check...");
 
         try {
+            // Check and create admin/moderator
+            createAdminAndModerator();
+
+            // Check if user data already exists
+            if (userRepository.count() >= 20) {
+                log.info("User database already seeded. Skipping user creation...");
+                return;
+            }
+
             List<Province> provinces = provinceRepository.findAll();
             if (provinces.isEmpty()) {
                 log.warn("No provinces found. Please ensure provinces are loaded first.");
@@ -50,8 +55,8 @@ public class DataSeederService implements CommandLineRunner {
             }
 
             // Get HCM and HN provinces
-            Province hcm = findProvinceByCode(provinces, "VN-SG");
-            Province hanoi = findProvinceByCode(provinces, "VN-HN");
+             Province hcm = findProvinceByCode(provinces, "VN-SG");
+             Province hanoi = findProvinceByCode(provinces, "VN-HN");
 
             if (hcm == null || hanoi == null) {
                 log.error("Could not find HCM or Hanoi provinces");
@@ -71,6 +76,62 @@ public class DataSeederService implements CommandLineRunner {
             log.info("Created {} users", users.size());
         } catch (Exception e) {
             log.error("Error during database seeding: ", e);
+        }
+    }
+
+    private void createAdminAndModerator() {
+        // Default admin
+        if (adminRepository.findByUsername("admin").isEmpty()) {
+            Admin admin = new Admin();
+            admin.setUsername("admin");
+            admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setFullName("System Admin");
+            admin.setEmail("admin@mapic.vn");
+            admin.setIsSuperAdmin(true);
+            admin.setStatus(AccountStatus.ACTIVE);
+            adminRepository.save(admin);
+            log.info("Created default admin: admin / admin123");
+        }
+
+        // Specific admin requested by user (seen in screenshot)
+        if (adminRepository.findByUsername("admin@gmail.com").isEmpty()) {
+            Admin admin2 = new Admin();
+            admin2.setUsername("admin@gmail.com");
+            admin2.setPassword(passwordEncoder.encode("admin123"));
+            admin2.setFullName("Google Admin");
+            admin2.setEmail("admin@gmail.com");
+            admin2.setIsSuperAdmin(true);
+            admin2.setStatus(AccountStatus.ACTIVE);
+            adminRepository.save(admin2);
+            log.info("Created default admin: admin@gmail.com / admin123");
+        }
+
+        // Default moderator
+        if (moderatorRepository.findByUsername("moderator").isEmpty()) {
+            Moderator moderator = new Moderator();
+            moderator.setUsername("moderator");
+            moderator.setPassword(passwordEncoder.encode("mod123"));
+            moderator.setFullName("Content Moderator");
+            moderator.setEmail("mod@mapic.vn");
+            moderator.setStatus(AccountStatus.ACTIVE);
+            moderator.setCanBlockMoments(true);
+            moderator.setCanBlockComments(true);
+            moderatorRepository.save(moderator);
+            log.info("Created default moderator: moderator / mod123");
+        }
+
+        // Specific moderator account
+        if (moderatorRepository.findByUsername("mod@gmail.com").isEmpty()) {
+            Moderator moderator2 = new Moderator();
+            moderator2.setUsername("mod@gmail.com");
+            moderator2.setPassword(passwordEncoder.encode("mod123"));
+            moderator2.setFullName("Google Moderator");
+            moderator2.setEmail("mod@gmail.com");
+            moderator2.setStatus(AccountStatus.ACTIVE);
+            moderator2.setCanBlockMoments(true);
+            moderator2.setCanBlockComments(true);
+            moderatorRepository.save(moderator2);
+            log.info("Created default moderator: mod@gmail.com / mod123");
         }
     }
 
@@ -307,4 +368,6 @@ public class DataSeederService implements CommandLineRunner {
         };
         return bios[random.nextInt(bios.length)];
     }
+
+
 }

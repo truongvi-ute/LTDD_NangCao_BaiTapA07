@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
+
 
 /**
  * Service quản lý Hashtag và Tagging
@@ -219,6 +221,7 @@ public class HashtagService {
         );
     }
     
+
     /**
      * Lấy trending hashtags
      * 
@@ -226,6 +229,7 @@ public class HashtagService {
      * @return Page<Hashtag>
      */
     public Page<Hashtag> getTrendingHashtags(Pageable pageable) {
-        return hashtagRepository.findTrendingHashtags(pageable);
+        LocalDateTime threshold = LocalDateTime.now().minusDays(7);
+        return hashtagRepository.findTrendingHashtags(threshold, pageable);
     }
 }

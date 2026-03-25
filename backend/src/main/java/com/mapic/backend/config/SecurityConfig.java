@@ -35,7 +35,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/provinces/**").permitAll()
-                .requestMatchers("/api/admin/**").permitAll()  // TODO: Protect in production
+                .requestMatchers("/api/admin/auth/**").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/moderator/**").hasAnyRole("ADMIN", "MODERATOR")
                 .requestMatchers("/uploads/**").permitAll()
                 .anyRequest().authenticated()
             )

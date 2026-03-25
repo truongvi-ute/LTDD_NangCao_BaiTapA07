@@ -4,11 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme, View } from 'react-native';
 import { Image } from 'expo-image';
 import authService from '@/src/services/authService';
+import notificationService from '@/src/services/notificationService';
 import { buildImageUrl } from '@/src/utils/imageHelper';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -21,7 +23,22 @@ export default function TabLayout() {
         console.error("Error loading user for tab bar:", error);
       }
     };
+    
+    const fetchUnreadCount = async () => {
+      try {
+        const count = await notificationService.getUnreadCount();
+        setUnreadCount(count);
+      } catch (error) {
+        console.error("Error fetching unread count:", error);
+      }
+    };
+
     loadUser();
+    fetchUnreadCount();
+
+    // Poll for notifications every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -82,6 +99,14 @@ export default function TabLayout() {
         options={{
           title: 'Bạn bè',
           tabBarIcon: ({ color }) => <Ionicons name="people" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Thông báo',
+          tabBarIcon: ({ color }) => <Ionicons name="notifications" size={24} color={color} />,
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
         }}
       />
       <Tabs.Screen

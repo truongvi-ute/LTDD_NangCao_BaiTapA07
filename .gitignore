@@ -98,6 +98,31 @@ backend/.factorypath
 backend/uploads/
 
 # ===========================
+# FRONTEND ADMIN (Flutter)
+# ===========================
+
+frontend_admin/.atom/
+frontend_admin/.build/
+frontend_admin/.buildlog/
+frontend_admin/.history
+frontend_admin/.svn/
+frontend_admin/.swiftpm/
+frontend_admin/migrate_working_dir/
+frontend_admin/**/doc/api/
+frontend_admin/**/ios/Flutter/.last_build_id
+frontend_admin/.dart_tool/
+frontend_admin/.flutter-plugins-dependencies
+frontend_admin/.pub-cache/
+frontend_admin/.pub/
+frontend_admin/build/
+frontend_admin/coverage/
+frontend_admin/app.*.symbols
+frontend_admin/app.*.map.json
+frontend_admin/android/app/debug
+frontend_admin/android/app/profile
+frontend_admin/android/app/release
+
+# ===========================
 # COMMON
 # ===========================
 

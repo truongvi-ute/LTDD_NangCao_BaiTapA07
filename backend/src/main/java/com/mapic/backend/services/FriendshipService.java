@@ -22,6 +22,7 @@ public class FriendshipService {
     
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
     
     @Transactional
     public void sendFriendRequest(Long requesterId, String addresseeUsername) {
@@ -57,6 +58,17 @@ public class FriendshipService {
         friendship.setStatus(FriendshipStatus.PENDING);
         
         friendshipRepository.save(friendship);
+        
+        // Send notification
+        notificationService.createNotification(
+                addressee,
+                requester,
+                com.mapic.backend.entities.NotificationType.FRIEND_REQUEST,
+                requester.getId(), // The target is the requester's profile or the request itself. Let's use requester ID.
+                com.mapic.backend.entities.TaggableType.USER,
+                null
+        );
+        
         log.info("Friend request sent from {} to {}", requesterId, addressee.getId());
     }
     

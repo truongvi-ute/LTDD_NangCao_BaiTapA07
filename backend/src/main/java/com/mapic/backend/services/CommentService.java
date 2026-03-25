@@ -25,6 +25,7 @@ public class CommentService {
     private final CommentReactionRepository commentReactionRepository;
     private final MomentRepository momentRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
     
     @Transactional
     public CommentDto createComment(Long momentId, Long userId, CreateCommentRequest request) {
@@ -48,6 +49,28 @@ public class CommentService {
         
         Comment saved = commentRepository.save(comment);
         updateMomentCommentCount(moment);
+
+        // Send notification to moment author
+        notificationService.createNotification(
+                moment.getAuthor(),
+                user,
+                com.mapic.backend.entities.NotificationType.NEW_COMMENT,
+                moment.getId(),
+                com.mapic.backend.entities.TaggableType.MOMENT,
+                comment.getContent()
+        );
+
+        // If reply, send notification to parent comment author
+        if (comment.getParentComment() != null) {
+            notificationService.createNotification(
+                    comment.getParentComment().getUser(),
+                    user,
+                    com.mapic.backend.entities.NotificationType.NEW_REPLY,
+                    comment.getParentComment().getId(),
+                    com.mapic.backend.entities.TaggableType.COMMENT,
+                    comment.getContent()
+            );
+        }
         
         return convertToDto(saved, userId);
     }

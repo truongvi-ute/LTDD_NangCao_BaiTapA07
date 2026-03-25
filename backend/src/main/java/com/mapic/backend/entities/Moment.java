@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Moment {
+public class Moment implements Taggable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -69,5 +69,9 @@ public class Moment {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+    }
+    @Override
+    public TaggableType getTaggableType() {
+        return TaggableType.MOMENT;
     }
 }

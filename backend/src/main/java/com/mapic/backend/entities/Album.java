@@ -13,7 +13,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Album {
+public class Album implements Taggable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,5 +38,9 @@ public class Album {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+    }
+    @Override
+    public TaggableType getTaggableType() {
+        return TaggableType.ALBUM;
     }
 }

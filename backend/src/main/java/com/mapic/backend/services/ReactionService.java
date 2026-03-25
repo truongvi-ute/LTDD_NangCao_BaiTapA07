@@ -24,6 +24,7 @@ public class ReactionService {
     private final MomentRepository momentRepository;
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
     
     @Transactional
     public ReactionDto toggleReaction(Long momentId, Long userId, ReactionType type) {
@@ -59,6 +60,16 @@ public class ReactionService {
             MomentReaction saved = momentReactionRepository.save(reaction);
             updateMomentReactionCount(moment);
             
+            // Send notification
+            notificationService.createNotification(
+                    moment.getAuthor(),
+                    user,
+                    com.mapic.backend.entities.NotificationType.MOMENT_REACTION,
+                    moment.getId(),
+                    com.mapic.backend.entities.TaggableType.MOMENT,
+                    type.name()
+            );
+            
             return convertToDto(saved);
         }
     }
@@ -93,6 +104,16 @@ public class ReactionService {
             
             CommentReaction saved = commentReactionRepository.save(reaction);
             updateCommentReactionCount(comment);
+
+            // Send notification
+            notificationService.createNotification(
+                    comment.getUser(),
+                    user,
+                    com.mapic.backend.entities.NotificationType.COMMENT_REACTION,
+                    comment.getId(),
+                    com.mapic.backend.entities.TaggableType.COMMENT,
+                    type.name()
+            );
             
             return convertToDto(saved);
         }
